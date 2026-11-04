@@ -177,25 +177,47 @@ with row1_col1:
     st.plotly_chart(fig1, width="stretch", config={"displayModeBar": False})
 
 with row1_col2:
-    segment_sales = filtered.groupby("Customer_Segment", as_index=False).agg(
-        Sales=("Total_Sales_EGP", "sum")
+    customer_order_counts = (
+        filtered.groupby("Customer_ID")["Order_ID"]
+        .nunique()
+        .rename("Total_Orders")
+    )
+    repeat_behavior = pd.DataFrame(
+        {
+            "Customer Type": [
+                "Repeat Customers",
+                "One-time Customers",
+            ],
+            "Customers": [
+                int((customer_order_counts > 1).sum()),
+                int((customer_order_counts == 1).sum()),
+            ],
+        }
     )
     fig2 = px.pie(
-        segment_sales,
-        values="Sales",
-        names="Customer_Segment",
+        repeat_behavior,
+        values="Customers",
+        names="Customer Type",
         hole=0.5,
-        title="Sales by Customer Segment",
-        color_discrete_sequence=CHART_COLORS,
+        title="Repeat Purchase Behavior",
+        color="Customer Type",
+        color_discrete_map={
+            "Repeat Customers": "#3F6F58",
+            "One-time Customers": "#D2A45F",
+        },
     )
     fig2.update_layout(
         **CHART_LAYOUT, title_font_color="#355548", title_font_size=13,
         paper_bgcolor="rgba(0,0,0,0)",
     )
-    fig2.update_traces(textposition="inside", textinfo="percent+label")
+    fig2.update_traces(
+        textposition="inside",
+        textinfo="percent+label",
+        hovertemplate="%{label}<br>Customers: %{value:,.0f}<extra></extra>",
+    )
     st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
 
-st.markdown('<h2 class="section-heading">Product and Regional Performance</h2>', unsafe_allow_html=True)
+st.markdown('<h2 class="section-heading">Product and Sales Channel Performance</h2>', unsafe_allow_html=True)
 row2_col1, row2_col2 = st.columns(2)
 
 with row2_col1:
@@ -223,27 +245,27 @@ with row2_col1:
     st.plotly_chart(fig3, width="stretch", config={"displayModeBar": False})
 
 with row2_col2:
-    city_sales = (
-        filtered.groupby("City", as_index=False)
+    channel_sales = (
+        filtered.groupby("Sales_Channel", as_index=False)
         .agg(Sales=("Total_Sales_EGP", "sum"), Orders=("Order_ID", "count"))
         .sort_values("Sales", ascending=False)
     )
-    fig4 = px.bar(
-        city_sales,
-        x="City",
+    fig5 = px.bar(
+        channel_sales,
+        x="Sales_Channel",
         y="Sales",
         text="Orders",
-        title="Sales and Orders by City",
-        labels={"City": "City", "Sales": "Sales (EGP)"},
+        title="Sales and Orders by Channel",
+        labels={"Sales_Channel": "Channel", "Sales": "Sales (EGP)"},
         color="Sales",
         color_continuous_scale=CHART_COLOR_SCALE,
     )
-    fig4.update_layout(
+    fig5.update_layout(
         **CHART_LAYOUT, title_font_color="#355548", title_font_size=13,
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
     )
-    fig4.update_traces(textposition="outside")
-    st.plotly_chart(fig4, width="stretch", config={"displayModeBar": False})
+    fig5.update_traces(textposition="outside")
+    st.plotly_chart(fig5, width="stretch", config={"displayModeBar": False})
 
 st.markdown('<h2 class="section-heading">Regional Breakdown</h2>', unsafe_allow_html=True)
 regional_performance = (
@@ -270,9 +292,10 @@ st.dataframe(
 st.markdown('<h2 class="section-heading">Recommended Actions</h2>', unsafe_allow_html=True)
 st.markdown(
     """
-    - **Improve website checkout:** Prioritize checkout speed and usability to increase completed purchases.
-    - **Bundle high-margin products:** Pair popular products with complementary, slower-moving accessories to increase average order value.
-    - **Launch a loyalty program:** Offer relevant rewards to encourage repeat purchases.
     - **Test free-shipping thresholds:** Run an A/B test to measure whether a free-shipping offer increases new-customer order value.
+    - **Launch a loyalty program:** Offer relevant rewards to encourage repeat purchases.
+    - **Bundle high-margin products:** Pair popular products with complementary, slower-moving accessories to increase average order value.
+    - **Improve website checkout:** Prioritize checkout speed and usability to increase completed purchases.
+    
     """
 )
