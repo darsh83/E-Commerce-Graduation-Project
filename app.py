@@ -177,11 +177,15 @@ with row1_col1:
     st.plotly_chart(fig1, width="stretch", config={"displayModeBar": False})
 
 with row1_col2:
-    customer_order_counts = (
-        filtered.groupby("Customer_ID")["Order_ID"]
+    all_customer_order_counts = (
+        df.groupby("Customer_ID")["Order_ID"]
         .nunique()
         .rename("Total_Orders")
     )
+    filtered_customer_ids = filtered["Customer_ID"].unique()
+    customer_order_counts = all_customer_order_counts[
+        all_customer_order_counts.index.isin(filtered_customer_ids)
+    ]
     repeat_behavior = pd.DataFrame(
         {
             "Customer Type": [
